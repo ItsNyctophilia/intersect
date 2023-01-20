@@ -177,8 +177,8 @@ void hash_set_destroy(hash_set * set)
 static int alpha_sort(const void *a, const void *b)
 // Sorts given words alphabetically and places null nodes at the end
 {
-	const hash_node *left = *(const hash_node **) a;
-	const hash_node *right = *(const hash_node **) b;
+	const hash_node *left = *(const hash_node **)a;
+	const hash_node *right = *(const hash_node **)b;
 	if (!left && !right) {
 		return 0;
 	}
@@ -191,7 +191,7 @@ static int alpha_sort(const void *a, const void *b)
 	return strcasecmp(left->word, right->word);
 }
 
-void hash_to_sorted_list(hash_set *set)
+void hash_set_to_sorted_list(hash_set * set)
 {
 	// This initial code block decouples linked lists made from hash
 	// collisions into individual nodes in the set array; this does not
@@ -199,7 +199,7 @@ void hash_to_sorted_list(hash_set *set)
 	// to implement for basic functionality
 	unsigned i = 0;
 	hash_node *node = NULL;
-	while(i < set->size) {
+	while (i < set->size) {
 		if (set->table[i] != NULL && set->table[i]->next != NULL) {
 			node = set->table[i];
 			set->table[i] = node->next;
