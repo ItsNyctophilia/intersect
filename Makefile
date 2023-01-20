@@ -3,7 +3,7 @@ CFLAGS += -Wall -Wextra -Wpedantic
 CFLAGS += -Wvla -Wwrite-strings -Waggregate-return -Wfloat-equal
 CFLAGS += -std=c18
 
-intersect:
+intersect: intersect.o hashset.o
 
 .PHONY: debug
 debug: CFLAGS += -g
