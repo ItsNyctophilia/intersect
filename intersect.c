@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
 			// Safe to cast file_num as unsigned, as it will never
 			// be less than 0
 			if(set->table[i]->counter == (unsigned) file_num - 2) {
-				printf("word[%u] == %s", i, set->table[i]->word);
+				printf("word[%u] == %s[c:%u]", i, set->table[i]->word, set->table[i]->counter);
 				if (set->table[i]->alt_next != NULL) {
 					node = set->table[i]->alt_next;
 					while(node != NULL) {

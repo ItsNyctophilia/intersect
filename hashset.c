@@ -82,6 +82,8 @@ void hash_set_add_word(hash_set * set, const char *word)
 		if (strcasecmp(node->word, word) == 0) {
 			// Case: alternate spelling found in first file
 			hash_set_add_alts(set, word, 0);
+			// Decrement counter so that count is correct
+			--node->counter;
 			return;
 		}
 		node = node->next;
