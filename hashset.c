@@ -82,6 +82,8 @@ void hash_set_add_word(hash_set * set, const char *word)
 		if (strcasecmp(node->word, word) == 0) {
 			// Case: alternate spelling found in first file
 			hash_set_add_alts(set, word, 0);
+			// Decrement counter so that count is correct
+			--node->counter;
 			return;
 		}
 		node = node->next;
@@ -170,4 +172,49 @@ void hash_set_destroy(hash_set * set)
 	}
 	free(set->table);
 	free(set);
+}
+
+static int alpha_sort(const void *a, const void *b)
+// Sorts given words alphabetically and places null nodes at the end
+{
+	const hash_node *left = *(const hash_node **)a;
+	const hash_node *right = *(const hash_node **)b;
+	if (!left && !right) {
+		return 0;
+	}
+	if (!left) {
+		return 1;
+	}
+	if (!right) {
+		return -1;
+	}
+	return strcasecmp(left->word, right->word);
+}
+
+void hash_set_to_sorted_list(hash_set * set)
+{
+	// This initial code block decouples linked lists made from hash
+	// collisions into individual nodes in the set array; this does not
+	// seem like the most efficient way to do this, but it was easy 
+	// to implement for basic functionality
+	unsigned i = 0;
+	hash_node *node = NULL;
+	while (i < set->size) {
+		if (set->table[i] != NULL && set->table[i]->next != NULL) {
+			node = set->table[i];
+			set->table[i] = node->next;
+			node->next = NULL;
+
+			for (unsigned j = 0; j < set->size; ++j) {
+				if (set->table[j] == NULL) {
+					set->table[j] = node;
+					break;
+				}
+			}
+		} else {
+			++i;
+		}
+	}
+	qsort(set->table, set->size, sizeof(set->table[0]), alpha_sort);
+	return;
 }

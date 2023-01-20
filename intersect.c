@@ -12,8 +12,8 @@ enum return_codes {
 	MEMORY_ERROR = 3
 };
 
-hash_set *load_words(FILE *fo);
-void compare_words(hash_set *set, FILE *fo, size_t file_num);
+hash_set *load_words(FILE * fo);
+void compare_words(hash_set * set, FILE * fo, size_t file_num);
 
 int main(int argc, char *argv[])
 {
@@ -41,24 +41,27 @@ int main(int argc, char *argv[])
 	fclose(file_1);
 
 	int file_num = 2;
-	while(file_num < argc) {
+	while (file_num < argc) {
 		FILE *fo = fopen(argv[file_num], "r");
 		compare_words(set, fo, file_num - 2);
 		fclose(fo);
 		++file_num;
 	}
+	hash_set_to_sorted_list(set);
 	hash_node *node = NULL;
 
 	int i = 0;
-	while(i < set->size) {
+	while (i < set->size) {
 		if (set->table[i] != NULL) {
 			// Safe to cast file_num as unsigned, as it will never
 			// be less than 0
-			if(set->table[i]->counter == (unsigned) file_num - 2) {
-				printf("word[%u] == %s", i, set->table[i]->word);
+			if (set->table[i]->counter == (unsigned)file_num - 2) {
+				printf("word[%u] == %s[c:%u]", i,
+				       set->table[i]->word,
+				       set->table[i]->counter);
 				if (set->table[i]->alt_next != NULL) {
 					node = set->table[i]->alt_next;
-					while(node != NULL) {
+					while (node != NULL) {
 						printf(", alt: %s", node->word);
 						node = node->alt_next;
 					}
@@ -73,7 +76,7 @@ int main(int argc, char *argv[])
 	return (SUCCESS);
 }
 
-hash_set *load_words(FILE *fo)
+hash_set *load_words(FILE * fo)
 {
 	hash_set *set = hash_set_create();
 	if (!set) {
@@ -82,7 +85,7 @@ hash_set *load_words(FILE *fo)
 	}
 	char *line_buf = NULL;
 	size_t buf_size = 0;
-	while(getline(&line_buf, &buf_size, fo) != -1) {
+	while (getline(&line_buf, &buf_size, fo) != -1) {
 		if (line_buf[0] == '\n') {
 			continue;
 		}
@@ -97,14 +100,14 @@ hash_set *load_words(FILE *fo)
 	if (line_buf) {
 		free(line_buf);
 	}
-	return(set);
+	return (set);
 }
 
-void compare_words(hash_set *set, FILE *fo, size_t file_num)
+void compare_words(hash_set * set, FILE * fo, size_t file_num)
 {
 	char *line_buf = NULL;
 	size_t buf_size = 0;
-	while(getline(&line_buf, &buf_size, fo) != -1) {
+	while (getline(&line_buf, &buf_size, fo) != -1) {
 		if (line_buf[0] == '\n') {
 			continue;
 		}
