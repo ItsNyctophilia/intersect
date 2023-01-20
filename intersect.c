@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <stdbool.h>
 
@@ -10,7 +12,7 @@ enum return_codes {
 	MEMORY_ERROR = 3
 };
 
-
+hash_set *load_words(FILE *fo);
 
 int main(int argc, char *argv[])
 {
@@ -35,19 +37,14 @@ int main(int argc, char *argv[])
 	if (close_flag == true) {
 		return (INVOCATION_ERROR);
 	}
-
-	hash_set *set = hash_set_create();
-	hash_set_add_word(set, "test");
-	hash_set_add_word(set, "TEST");
-	//hash_set_add_alts(set, "TEST", 1);
-	hash_set_add_alts(set, "TeSt", 1);
-	hash_set_add_word(set, "new_word");
-	hash_set_add_alts(set, "new_WORD", 1);
-	printf("num_word = %d\n", set->num_words);
-	int i = 0;
+	FILE *file_1 = fopen(argv[1], "r");
+	hash_set *set = load_words(file_1);
+	fclose(file_1);
 	hash_node *node = NULL;
+
+	int i = 0;
 	while(i < set->size) {
-		if (set->table[i] != NULL && set->table[i]->counter == 1) {
+		if (set->table[i] != NULL) {
 			printf("word[%u] == %s", i, set->table[i]->word);
 			if (set->table[i]->alt_next != NULL) {
 				node = set->table[i]->alt_next;
@@ -63,4 +60,31 @@ int main(int argc, char *argv[])
 	hash_set_destroy(set);
 
 	return(SUCCESS);
+}
+
+hash_set *load_words(FILE *fo)
+{
+	hash_set *set = hash_set_create();
+	if (!set) {
+		fprintf(stderr, "Memory allocation error,");
+		exit(MEMORY_ERROR);
+	}
+	char *line_buf = NULL;
+	size_t buf_size = 0;
+	while(getline(&line_buf, &buf_size, fo) != -1) {
+		if (line_buf[0] == '\n') {
+			continue;
+		}
+		char *current_word = strtok(line_buf, " \t\n\v\f\r");
+		if (current_word != NULL) {
+			hash_set_add_word(set, current_word);
+		}
+		while ((current_word = strtok(NULL, " \t\n\v\f\r")) != NULL) {
+			hash_set_add_word(set, current_word);
+		}
+	}
+	if (line_buf) {
+		free(line_buf);
+	}
+	return(set);
 }
