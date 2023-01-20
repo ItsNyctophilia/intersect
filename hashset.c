@@ -116,8 +116,7 @@ void hash_set_add_alts(hash_set * set, const char *word, size_t file_num)
 	hash_node *node = set->table[index];
 	while (node != NULL) {
 		if (strcasecmp(node->word, word) == 0) {
-			node->counter +=
-			    (node->counter == file_num - 1) ? 1 : 0;
+			node->counter += (node->counter == file_num) ? 1 : 0;
 			while (node != NULL) {
 				if (strcmp(node->word, word) == 0) {
 					return;
