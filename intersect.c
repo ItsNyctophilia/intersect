@@ -27,6 +27,7 @@ static struct {
 hash_set *load_words(FILE * fo);
 void compare_words(hash_set * set, FILE * fo, size_t file_num);
 void default_print(hash_node *node);
+void vertical_print(hash_node *node);
 
 int main(int argc, char *argv[])
 {
@@ -71,34 +72,23 @@ int main(int argc, char *argv[])
 
 	while (file_num < argc) {
 		FILE *fo = fopen(argv[file_num], "r");
+		// (file_num - 2) == zero-indexed value that is the current file
+		// being processed
 		compare_words(set, fo, file_num - 2);
 		fclose(fo);
 		++file_num;
 	}
 	hash_set_to_sorted_list(set);
-	hash_node *node = NULL;
-	hash_set_iterate(set, default_print);
-	/*int i = 0;
-	while (i < set->size) {
-		if (set->table[i] != NULL) {
-			// Safe to cast file_num as unsigned, as it will never
-			// be less than 0
-			if (set->table[i]->counter == (unsigned)file_num - 2) {
-				printf("word[%u] == %s[c:%u]", i,
-				       set->table[i]->word,
-				       set->table[i]->counter);
-				if (set->table[i]->alt_next != NULL) {
-					node = set->table[i]->alt_next;
-					while (node != NULL) {
-						printf(", alt: %s", node->word);
-						node = node->alt_next;
-					}
-				}
-				putchar('\n');
-			}
-		}
-		++i;
-	}*/
+	if (options.vertical_print && options.punctuation_sensitive) {
+		;
+	} else if (options.vertical_print) {
+		hash_set_iterate(set, vertical_print);
+	} else if (options.punctuation_sensitive) {
+		;
+	} else {
+		hash_set_iterate(set, default_print);
+	}
+
 	hash_set_destroy(set);
 
 	return (SUCCESS);
@@ -154,10 +144,34 @@ void compare_words(hash_set * set, FILE * fo, size_t file_count)
 }
 
 void default_print(hash_node *node)
+// Prints nodes as they were found in the first file that matched across
+// all files.
 {
 	// file_num will never be negative, so this is a safe cast
 	if (node->counter == (unsigned) file_num - 2) {
 		printf("%s\n", node->word);
 	}
+	return;
+}
+
+void vertical_print(hash_node *node)
+// Prints nodes as they were found in the first file at the start of each
+// line, followed by all alternate-case versions of that word in the order
+// that they appeared in each file.
+{
+	// file_num will never be negative, so this is a safe cast
+	hash_node *root = node;
+	if (node->counter == (unsigned) file_num - 2) {
+		printf("%s", node->word);
+		if (node->alt_next != NULL) {
+			node = node->alt_next;
+			while (node != NULL) {
+				printf(" %s", node->word);
+				node = node->alt_next;
+			}
+		}
+		putchar('\n');
+	}
+	node = root;
 	return;
 }
