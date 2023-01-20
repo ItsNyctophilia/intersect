@@ -47,6 +47,7 @@ int main(int argc, char *argv[])
 		fclose(fo);
 		++file_num;
 	}
+	hash_to_sorted_list(set);
 	hash_node *node = NULL;
 
 	int i = 0;

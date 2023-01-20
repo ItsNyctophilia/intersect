@@ -24,6 +24,8 @@ void hash_set_add_word(hash_set *set, const char *word);
 
 void hash_set_add_alts(hash_set * set, const char *word, size_t file_num);
 
+void hash_to_sorted_list(hash_set *set);
+
 void hash_set_destroy(hash_set *set);
 
 #endif
