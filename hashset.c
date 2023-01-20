@@ -10,14 +10,14 @@
 #define INITIAL_TABLE_SIZE 1000
 #define LOAD_FACTOR 0.70
 
-typedef struct hash_node{
+typedef struct hash_node {
 	char *word;
 	unsigned counter;
 	struct hash_node *alt_next;
 	struct hash_node *next;
 } hash_node;
 
-typedef struct hash_set{
+typedef struct hash_set {
 	hash_node **table;
 	unsigned size;
 	unsigned num_words;
@@ -38,7 +38,13 @@ static unsigned int hash(const char *word, int table_size)
 hash_set *hash_set_create(void)
 {
 	hash_set *set = malloc(sizeof(hash_set));
+	if (!set) {
+		return NULL;
+	}
 	set->table = calloc(INITIAL_TABLE_SIZE, sizeof(hash_node *));
+	if (!set->table) {
+		return NULL;
+	}
 	set->size = INITIAL_TABLE_SIZE;
 	set->num_words = 0;
 	return set;
@@ -53,6 +59,9 @@ void hash_set_add_word(hash_set * set, const char *word)
 	if (((float)set->num_words / set->size) > LOAD_FACTOR) {
 		int new_size = set->size * 2;
 		hash_node **new_table = calloc(new_size, sizeof(hash_node *));
+		if (!new_table) {
+			return;
+		}
 		for (size_t i = 0; i < set->size; i++) {
 			hash_node *node = set->table[i];
 			while (node != NULL) {
@@ -78,7 +87,14 @@ void hash_set_add_word(hash_set * set, const char *word)
 		node = node->next;
 	}
 	node = malloc(sizeof(hash_node));
+	if (!node) {
+		return;
+	}
 	node->word = malloc(strlen(word) + 1);
+	if (!node->word) {
+		free(node);
+		return;
+	}
 	strcpy(node->word, word);
 	node->counter = 0;
 	node->next = set->table[index];
@@ -86,7 +102,6 @@ void hash_set_add_word(hash_set * set, const char *word)
 	set->table[index] = node;
 	set->num_words++;
 }
-
 
 void hash_set_add_alts(hash_set * set, const char *word, size_t file_num)
 // Indexes into an already-populated hash set and
@@ -96,18 +111,28 @@ void hash_set_add_alts(hash_set * set, const char *word, size_t file_num)
 	if (!set || !word) {
 		return;
 	}
-	
+
 	unsigned index = hash(word, set->size);
 	hash_node *node = set->table[index];
 	while (node != NULL) {
 		if (strcasecmp(node->word, word) == 0) {
-			node->counter += (node->counter == file_num - 1) ? 1 : 0;
+			node->counter +=
+			    (node->counter == file_num - 1) ? 1 : 0;
 			while (node != NULL) {
 				if (strcmp(node->word, word) == 0) {
 					return;
 				} else if (node->alt_next == NULL) {
-					hash_node *new_node = malloc(sizeof(hash_node));
-					new_node->word = malloc(strlen(word) + 1);
+					hash_node *new_node =
+					    malloc(sizeof(hash_node));
+					if (!new_node) {
+						return;
+					}
+					new_node->word =
+					    malloc(strlen(word) + 1);
+					if (!new_node->word) {
+						free(new_node);
+						return;
+					}
 					new_node->alt_next = NULL;
 					strcpy(new_node->word, word);
 					node->alt_next = new_node;
@@ -126,7 +151,7 @@ void hash_set_destroy(hash_set * set)
 		return;
 	}
 	for (size_t i = 0; i < set->size; i++) {
-		hash_node *node = set->table[i];	
+		hash_node *node = set->table[i];
 		while (node != NULL) {
 			hash_node *next = node->next;
 			hash_node *alt_next = node->alt_next;
