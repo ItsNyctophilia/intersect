@@ -25,13 +25,37 @@ typedef struct hash_set {
 	unsigned num_words;
 } hash_set;
 
-void hash_set_add_alts(hash_set * set, const char *word, size_t file_num);
+void hash_set_add_alts(hash_set * set, const char *word, int file_num);
 
 static unsigned int hash(const char *word, int table_size)
 {
 	// Arbitrary constant used by the djb2 algorithm
 	unsigned hash = 5381;
+	size_t punc_start_len = 0;
+	size_t punc_end_len = 0;
+	// The following code is to avoid hashing punctuation such that nodes
+	// with the same word (sans punctuation, capitalization-agnostic) will
+	// be hashed to the same value
+	for (size_t i = 0; i < strlen(word); ++i) {
+		if (ispunct(word[i])) {
+			++punc_start_len;
+			continue;
+		}
+		break;
+	}
+	for (size_t i = strlen(word); i > 0; --i) {
+		if (ispunct(word[i - 1])) {
+			++punc_end_len;
+		}
+		break;
+	}
+
 	for (size_t i = 0; i < strlen(word); i++) {
+		if (ispunct(word[i])
+		    && (i < punc_start_len
+			|| i > strlen(word) - punc_end_len - 1)) {
+			continue;
+		}
 		hash = ((hash << 5) + hash) + tolower(word[i]);
 	}
 	return hash % table_size;
@@ -83,9 +107,9 @@ void hash_set_add_word(hash_set * set, const char *word)
 	while (node != NULL) {
 		if (strcasecmp(node->word, word) == 0) {
 			// Case: alternate spelling found in first file
-			hash_set_add_alts(set, word, 0);
-			// Decrement counter so that count is correct
-			--node->counter;
+			hash_set_add_alts(set, word, -1);
+			// Set file number to explicit value for counter-tracking
+			// purposes
 			return;
 		}
 		node = node->next;
@@ -107,7 +131,7 @@ void hash_set_add_word(hash_set * set, const char *word)
 	set->num_words++;
 }
 
-void hash_set_add_alts(hash_set * set, const char *word, size_t file_num)
+void hash_set_add_alts(hash_set * set, const char *word, int file_num)
 // Indexes into an already-populated hash set and
 // adds alternative spellings of existing nodes on
 // the top level to the alt_next chain of that node
@@ -115,12 +139,52 @@ void hash_set_add_alts(hash_set * set, const char *word, size_t file_num)
 	if (!set || !word) {
 		return;
 	}
-
 	unsigned index = hash(word, set->size);
 	hash_node *node = set->table[index];
+
+	if (!node) {
+		return;
+	}
+	// The following code block is dumb. It's dumb and slow and bad, but
+	// I couldn't find a faster way to compare two strings while ignoring
+	// trailing and leading punctuation
+	// psl == "punctuation start length"
+	int old_psl = 0;
+	int new_psl = 0;
+	for (size_t i = 0; i < strlen(word); ++i) {
+		if (ispunct(node->word[i])) {
+			++old_psl;
+			continue;
+		}
+		break;
+	}
+	for (size_t i = 0; i < strlen(word); ++i) {
+		if (ispunct(word[i])) {
+			++new_psl;
+			continue;
+		}
+		break;
+	}
+	int old_span =
+	    strspn(node->word,
+		   "abcdefghijklmnopqrstuvwxyzABCEDFGHIJKLMNOPQRSTUVWXYZ");
+	int new_span =
+	    strspn(word,
+		   "abcdefghijklmnopqrstuvwxyzABCEDFGHIJKLMNOPQRSTUVWXYZ");
+	if (old_span > new_span) {
+		new_span = old_span;
+	}
+
 	while (node != NULL) {
-		if (strcasecmp(node->word, word) == 0) {
-			node->counter += (node->counter == file_num) ? 1 : 0;
+		if (strncasecmp(node->word + old_psl, word + new_psl, new_span)
+		    == 0) {
+			if (file_num != -1) {
+				// If file_num is not explicitly set to -1, it is always
+				// positive and safe to case to unsigned
+				node->counter +=
+				    (node->counter ==
+				     (unsigned)file_num) ? 1 : 0;
+			}
 			while (node != NULL) {
 				if (strcmp(node->word, word) == 0) {
 					return;
@@ -176,9 +240,9 @@ void hash_set_destroy(hash_set * set)
 	free(set);
 }
 
-void hash_set_iterate(hash_set *set, void (*function)(hash_node *node))
+void hash_set_iterate(hash_set * set, void (*function)(hash_node * node))
 {
-	if (!set || !function) {
+	if(!set || !function) {
 		return;
 	}
 	for (unsigned i = 0; i < set->size; ++i) {
