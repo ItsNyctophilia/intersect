@@ -26,6 +26,8 @@ void hash_set_add_alts(hash_set * set, const char *word, size_t file_num);
 
 void hash_set_to_sorted_list(hash_set * set);
 
+void hash_set_iterate(hash_set *set, void (*function)(hash_node *node));
+
 void hash_set_destroy(hash_set * set);
 
 #endif

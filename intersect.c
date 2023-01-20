@@ -1,9 +1,16 @@
 #define _GNU_SOURCE
 
+#include <ctype.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
+#include <unistd.h>
 
 #include "hashset.h"
+
+// This variable is global so that I'm able to use my hash set iterate
+// function without breaking the signature
+int file_num = 2;
 
 enum return_codes {
 	SUCCESS = 0,
@@ -12,12 +19,34 @@ enum return_codes {
 	MEMORY_ERROR = 3
 };
 
+static struct {
+	bool vertical_print;
+	bool punctuation_sensitive;
+} options = {false, false};
+
 hash_set *load_words(FILE * fo);
 void compare_words(hash_set * set, FILE * fo, size_t file_num);
+void default_print(hash_node *node);
 
 int main(int argc, char *argv[])
 {
-	if (argc < 3) {
+	int opt;
+	while ((opt = getopt(argc, argv, "ai")) != -1) {
+		switch (opt) {
+		case 'a':
+			options.vertical_print = true;
+			break;
+		case 'i':
+			options.punctuation_sensitive = true;
+			break;
+		case '?':
+			return(INVOCATION_ERROR);
+		}
+	}
+	argc -= optind;
+	argv += optind;
+
+	if (argc < 2) {
 		fprintf(stderr, "Usage: %s [FILE]...\n", argv[0]);
 		return (INVOCATION_ERROR);
 	}
@@ -40,7 +69,6 @@ int main(int argc, char *argv[])
 	hash_set *set = load_words(file_1);
 	fclose(file_1);
 
-	int file_num = 2;
 	while (file_num < argc) {
 		FILE *fo = fopen(argv[file_num], "r");
 		compare_words(set, fo, file_num - 2);
@@ -49,8 +77,8 @@ int main(int argc, char *argv[])
 	}
 	hash_set_to_sorted_list(set);
 	hash_node *node = NULL;
-
-	int i = 0;
+	hash_set_iterate(set, default_print);
+	/*int i = 0;
 	while (i < set->size) {
 		if (set->table[i] != NULL) {
 			// Safe to cast file_num as unsigned, as it will never
@@ -70,7 +98,7 @@ int main(int argc, char *argv[])
 			}
 		}
 		++i;
-	}
+	}*/
 	hash_set_destroy(set);
 
 	return (SUCCESS);
@@ -103,7 +131,7 @@ hash_set *load_words(FILE * fo)
 	return (set);
 }
 
-void compare_words(hash_set * set, FILE * fo, size_t file_num)
+void compare_words(hash_set * set, FILE * fo, size_t file_count)
 {
 	char *line_buf = NULL;
 	size_t buf_size = 0;
@@ -113,14 +141,23 @@ void compare_words(hash_set * set, FILE * fo, size_t file_num)
 		}
 		char *current_word = strtok(line_buf, " \t\n\v\f\r");
 		if (current_word != NULL) {
-			hash_set_add_alts(set, current_word, file_num);
+			hash_set_add_alts(set, current_word, file_count);
 		}
 		while ((current_word = strtok(NULL, " \t\n\v\f\r")) != NULL) {
-			hash_set_add_alts(set, current_word, file_num);
+			hash_set_add_alts(set, current_word, file_count);
 		}
 	}
 	if (line_buf) {
 		free(line_buf);
+	}
+	return;
+}
+
+void default_print(hash_node *node)
+{
+	// file_num will never be negative, so this is a safe cast
+	if (node->counter == (unsigned) file_num - 2) {
+		printf("%s\n", node->word);
 	}
 	return;
 }
