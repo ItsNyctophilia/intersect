@@ -1,6 +1,10 @@
 #ifndef HASH_SET_H
 #define HASH_SET_H
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 typedef struct hash_node{
 	char *word;
 	unsigned counter;
@@ -18,7 +22,7 @@ hash_set *hash_set_create(void);
 
 void hash_set_add_word(hash_set *set, const char *word);
 
-int hash_set_contains_word(hash_set *set, const char *word);
+void hash_set_add_alts(hash_set * set, const char *word, size_t file_num);
 
 void hash_set_destroy(hash_set *set);
 
