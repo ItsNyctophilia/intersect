@@ -14,13 +14,12 @@ profile: CFLAGS += -pg
 profile: LDFLAGS += -pg
 profile: intersect
 
-# Will include proper test files once testing has been implemented
-#.PHONY: check
-#check: intersect
+# If this doesn't run, check the executable bit on test.bash
+.PHONY: check
+check: intersect
+check:
+	./test/test.bash
 
-#test/test-all: LDFLAGS += -L.
-#test/test-all: LDLIBS += -lcheck -lm -lrt -lpthread -lsubunit
-#test/test-all: test/test-all.o test/test-intersect.o
 
 .PHONY: clean
 clean:

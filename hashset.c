@@ -130,7 +130,7 @@ void hash_set_add_word(hash_set * set, const char *word)
 	node->next = set->table[index];
 	node->alt_next = NULL;
 	set->table[index] = node;
-	set->num_words++;
+	++set->num_words;
 }
 
 void hash_set_add_alts(hash_set * set, const char *word, int file_num)
