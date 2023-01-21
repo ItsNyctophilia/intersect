@@ -29,7 +29,7 @@ void hash_set_add_alts(hash_set * set, const char *word, int file_num);
 
 static unsigned int hash(const char *word, int table_size)
 {
-	// Arbitrary constant used by the djb2 algorithm
+	// Arbitrary constant used by the djb2 hashing algorithm
 	unsigned hash = 5381;
 	size_t punc_start_len = 0;
 	size_t punc_end_len = 0;
@@ -51,6 +51,8 @@ static unsigned int hash(const char *word, int table_size)
 	}
 
 	for (size_t i = 0; i < strlen(word); i++) {
+		// This comparison checks if the punctuation is at the start
+		// or end of the word, ignoring punctuation in the middle
 		if (ispunct(word[i])
 		    && (i < punc_start_len
 			|| i > strlen(word) - punc_end_len - 1)) {
@@ -108,7 +110,7 @@ void hash_set_add_word(hash_set * set, const char *word)
 		if (strcasecmp(node->word, word) == 0) {
 			// Case: alternate spelling found in first file
 			hash_set_add_alts(set, word, -1);
-			// Set file number to explicit value for counter-tracking
+			// Set file number to explicit "-1" value for counter-tracking
 			// purposes
 			return;
 		}
@@ -132,9 +134,9 @@ void hash_set_add_word(hash_set * set, const char *word)
 }
 
 void hash_set_add_alts(hash_set * set, const char *word, int file_num)
-// Indexes into an already-populated hash set and
-// adds alternative spellings of existing nodes on
-// the top level to the alt_next chain of that node
+// Indexes into an already-populated hash set and adds alternative
+// spellings of existing nodes on the top level to the alt_next chain
+// off of that node.
 {
 	if (!set || !word) {
 		return;
@@ -145,7 +147,7 @@ void hash_set_add_alts(hash_set * set, const char *word, int file_num)
 	if (!node) {
 		return;
 	}
-	// The following code block is dumb. It's dumb and slow and bad, but
+	// The following code block is dumb. It's dumb and looks bad, but
 	// I couldn't find a faster way to compare two strings while ignoring
 	// trailing and leading punctuation
 	// psl == "punctuation start length"
@@ -165,12 +167,12 @@ void hash_set_add_alts(hash_set * set, const char *word, int file_num)
 		}
 		break;
 	}
-	int old_span =
-	    strspn(node->word,
-		   "abcdefghijklmnopqrstuvwxyzABCEDFGHIJKLMNOPQRSTUVWXYZ");
-	int new_span =
-	    strspn(word,
-		   "abcdefghijklmnopqrstuvwxyzABCEDFGHIJKLMNOPQRSTUVWXYZ");
+	// This is just to find which word is longer excluding punctuation;
+	// there is probably a smarter way to do this, but it works
+	int old_span = strspn(node->word,
+			      "abcdefghijklmnopqrstuvwxyzABCEDFGHIJKLMNOPQRSTUVWXYZ");
+	int new_span = strspn(word,
+			      "abcdefghijklmnopqrstuvwxyzABCEDFGHIJKLMNOPQRSTUVWXYZ");
 	if (old_span > new_span) {
 		new_span = old_span;
 	}
@@ -180,7 +182,9 @@ void hash_set_add_alts(hash_set * set, const char *word, int file_num)
 		    == 0) {
 			if (file_num != -1) {
 				// If file_num is not explicitly set to -1, it is always
-				// positive and safe to case to unsigned
+				// positive and safe to cast to unsigned; if it is -1,
+				// then the word is a duplicate spelling of a word
+				// found in the first file.
 				node->counter +=
 				    (node->counter ==
 				     (unsigned)file_num) ? 1 : 0;
@@ -242,7 +246,7 @@ void hash_set_destroy(hash_set * set)
 
 void hash_set_iterate(hash_set * set, void (*function)(hash_node * node))
 {
-	if(!set || !function) {
+	if (!set || !function) {
 		return;
 	}
 	for (unsigned i = 0; i < set->size; ++i) {
@@ -272,6 +276,9 @@ static int alpha_sort(const void *a, const void *b)
 }
 
 void hash_set_to_sorted_list(hash_set * set)
+// This is the bottleneck for this project. Having to walk the entire
+// array, decoupling linked nodes, and then sorting it all takes a
+// substantial amount of time compared to all other functions. 
 {
 	// This initial code block decouples linked lists made from hash
 	// collisions into individual nodes in the set array; this does not
