@@ -246,7 +246,7 @@ void hash_set_destroy(hash_set * set)
 
 void hash_set_iterate(hash_set * set, void (*function)(hash_node * node))
 {
-	if (!set || !function) {
+	if(!set || !function) {
 		return;
 	}
 	for (unsigned i = 0; i < set->size; ++i) {
