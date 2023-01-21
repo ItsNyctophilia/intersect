@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
 		}
 	}
 	if (argc < 3) {
-		fprintf(stderr, "Usage: %s [FILE]...\n", argv[0]);
+		fprintf(stderr, "Usage: %s FILE1 FILE2 [FILE 3...]\n", argv[0]);
 		return (INVOCATION_ERROR);
 	}
 
@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
 	argv += optind;
 	// Validates that given files are able to be opened; sourced from ws.c
 	bool close_flag = false;
-	for (int i = 1; i < argc; ++i) {
+	for (int i = 0; i < argc; ++i) {
 		FILE *fo = fopen(argv[i], "r");
 		if (!fo) {	// If file could not be opened for reading
 			close_flag = true;	// Close after all files checked

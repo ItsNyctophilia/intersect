@@ -1,0 +1,39 @@
+.TH intersect 1 "January 2023" "1.0" "intersect manual"
+.SH NAME
+intersect - compares words in multiple files and prints common words
+.SH SYNOPSIS
+.B intersect [OPTIONS] [FILE]...
+.SH DESCRIPTION
+intersect is a program that takes multiple files as input and compares the words in them. It then prints out any words that are found in all of the input files.
+
+The following options are available:
+.TP
+.B -a
+Print out all versions of a given word found with different casing (uppercase, lowercase, capitalized, etc.) on the same line.
+.TP
+.B -i
+Ignore leading and trailing punctuation when comparing words. For example, "_hello" and "hello_" match with each other as well as "hello".
+.SH RETURN VALUE
+intersect returns one of the following codes:
+.TP
+.B 0
+if the program ran successfully
+.TP
+.B 1
+if there was an error with the command line invocation
+.TP
+.B 2
+if there was an error opening or reading a file
+.TP
+.B 3
+if there was a memory error
+.SH EXAMPLES
+To compare the words in file1.txt and file2.txt and print the common words, enumerating all differently-cased matches:
+.TP
+.B $ intersect -a file1.txt file2.txt
+.TP
+To compare the words in file1.txt, file2.txt, and file3.txt, print the common words while ignoring leading/trailing punctuation, enumerating all differently-cased matches:
+.TP
+.B $ intersect -ai file1.txt file2.txt file3.txt
+.SH AUTHOR
+Written by James Viner.
